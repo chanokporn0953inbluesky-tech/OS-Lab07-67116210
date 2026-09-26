@@ -1,0 +1,25 @@
+======================================================
+COE67-222 Operating Systems - Lab 09 Report
+Name: Ms.Chanokporn Charoensilp
+Student ID: 67116210
+======================================================
+1. Inodes and Metadata:
+In the `inode_inspector.py` script, we printed the "Inode Number". If you rename the file using the Linux `mv` command, will the Inode Number change? Why or why not? (Hint: Think about how the OS separates the file name from the actual data).
+ตอบ:
+- ไม่เปลี่ยน (The Inode Number will NOT change)
+- เหตุผล: ในระบบปฏิบัติการ Linux ชื่อไฟล์และข้อมูลเนื้อหาจริงจะถูกแยกออกจากกัน โดยชื่อไฟล์เป็นเพียงตัวชี้ (Pointer / Directory entry) ที่ผูกเข้ากับหมายเลข Inode เท่านั้น เมื่อใช้คำสั่ง `mv` ระบบปฏิบัติการจะแก้ไขเพียงแค่ตารางรายชื่อไฟล์ใน Directory โดยไม่ได้สร้าง Inode ใหม่หรือย้ายตำแหน่ง Data blocks บนดิสก์ ข้อมูล Metadata และเนื้อหาไฟล์เดิมจึงยังคงผูกอยู่กับ Inode Number ตัวเดิมทุกประการ
+
+2. POSIX Permissions:
+If you want to set a file's permission so that the Owner has Read/Write/Execute (7), the Group has Read/Execute (5), and Others have absolutely no access (0), what would be the 3-digit octal number you pass into `os.chmod()`? 
+ตอบ:
+- เลขฐานแปด 3 หลักคือ `750` (หรือเขียนในโค้ด Python เป็น `0o750`)
+- ที่มา:
+  * Owner (Read = 4, Write = 2, Execute = 1) -> 4 + 2 + 1 = 7
+  * Group (Read = 4, Execute = 1) -> 4 + 1 = 5
+  * Others (ไม่มีสิทธิ์ใดๆ) -> 0
+
+3. The AI Context:
+Why is it safer to rely on Operating System file permissions (like `os.chmod(0o444)`) to protect production model weights rather than relying solely on application-level logic or Python try-except blocks?
+ตอบ:
+- การใช้สิทธิ์ระดับระบบปฏิบัติการ (OS-level permissions) เช่น `os.chmod(0o444)` ให้ความปลอดภัยที่เหนือกว่า เพราะการบังคับใช้อยู่ที่ระดับ Linux Kernel โดยตรง หากมีสคริปต์ใดๆ (ไม่ว่าจะเขียนด้วย Python, C++, Shell script) พยายามเปิดไฟล์แบบ Write ตัว Kernel จะปฏิเสธ System Call ทันที
+- ต่างจากการพึ่งพา Logic ระดับแอปพลิเคชันหรือ Python try-except ซึ่งทำงานอยู่บน User space และอาจถูกละเลยได้ง่ายจากความผิดพลาดของโปรแกรมเมอร์ (Human error เช่น ลืมครอบบล็อก try-except, เขียนโค้ดทับไฟล์ผิดบรรทัด) หรือเกิดบั๊กในโค้ดของคนอื่นในทีมที่แชร์คลัสเตอร์ร่วมกัน ดังนั้นการล็อกที่ระดับ Kernel จึงเป็นปราการด่านสุดท้ายที่ไม่สามารถถูก Bypass จากแอปพลิเคชันที่มีบั๊กได้
