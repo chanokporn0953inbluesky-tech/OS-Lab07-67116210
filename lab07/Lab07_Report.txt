@@ -1,0 +1,25 @@
+======================================================
+COE67-222 Operating Systems - Lab 07 Report
+Name: Ms.Chanokporn Charoensilp
+Student ID: 67116210
+======================================================
+
+1. The Convoy Effect (Phase 2):
+In the FCFS output of `cpu_scheduler.py`, what is the "Convoy Effect"? How did the presence of Process P1 affect the waiting times of P2 and P3?
+ตอบ:
+- "Convoy Effect" คือ ปรากฏการณ์ที่โปรเซสขนาดเล็กหรืองานสั้นๆ ต้องติดค้างและรอคอยเป็นเวลานานอยู่ด้านหลังโปรเซสขนาดใหญ่ที่ใช้ CPU นาน (CPU-heavy task) ที่เข้ามาในคิวก่อนหน้า
+- ในโปรแกรม `cpu_scheduler.py` โปรเซส P1 มี Burst Time สูงถึง 10 หน่วย ทำให้ P2 (ใช้เวลาเพียง 2 หน่วย) ต้องรอถึง 10 หน่วยเวลา และ P3 (ใช้เวลาเพียง 3 หน่วย) ต้องรอนานถึง 12 หน่วยเวลา ส่งผลให้ Average Waiting Time รวมของทั้งระบบสูงขึ้นอย่างมาก
+
+2. Choosing the Time Quantum:
+In Round Robin, the Time Quantum is critical. 
+- What happens if the OS sets the Time Quantum extremely large (e.g., Quantum = 100)? Which algorithm does RR start to behave like?
+- What happens if the OS sets the Time Quantum extremely small (e.g., Quantum = 0.0001)? (Hint: Think about Context Switching overhead).
+ตอบ:
+- หากตั้ง Time Quantum ให้มีค่าสูงมาก (เช่น Quantum = 100): แต่ละโปรเซสจะมีเวลาทำงานจนเสร็จสิ้นได้ในรอบเดียวโดยไม่ถูกขัดจังหวะ (Preempt) ทำให้อัลกอริทึม Round Robin จะมีพฤติกรรมทำงานเหมือนกับ FCFS (First-Come, First-Served)
+- หากตั้ง Time Quantum ให้มีค่าเล็กมากเกินไป (เช่น Quantum = 0.0001): ระบบจะเกิดการสลับการทำงานระหว่างโปรเซสบ่อยครั้งมากเกินไป ส่งผลให้เกิดภาระงานส่วนเกินจากการสลับบริบท (Context Switching overhead) สูงมาก ทำให้ CPU เสียเวลาส่วนใหญ่ไปกับการจัดการคิวและสลับโปรเซส แทนที่จะได้ประมวลผลงานจริง ระบบจึงช้าลงอย่างเห็นได้ชัด
+
+3. AI Context:
+In Phase 3, we used a Round Robin approach for generating tokens in an LLM. Explain why iteration-level Round Robin scheduling prevents long user queries from starving short queries, and how it improves perceived latency (Time To First Token / TTFT) for interactive AI applications.
+ตอบ:
+- การใช้ Iteration-level Round Robin (หรือ Continuous Batching) โดยจำลองการสร้างทีละ 1 Token สลับกันในแต่ละ Request ช่วยป้องกันไม่ให้งานยาว (เช่น เขียน essay 10 tokens) ยึดทรัพยากรไปทั้งหมด ทำให้คำขอสั้นๆ (เช่น ตอบเลข 2 tokens) มีโอกาสประมวลผลสลับกันและจบงานได้อย่างรวดเร็ว ไม่เกิดปัญหา Starvation
+- ในด้าน Perceived Latency วิธีนี้ช่วยให้ผู้ใช้งานทุกคนเริ่มเห็นข้อความแรกตอบกลับมาแทบจะทันที (ปรับปรุงค่า Time To First Token / TTFT ให้เร็วขึ้น) ผู้ใช้จึงรู้สึกว่าระบบตอบสนองอย่างรวดเร็ว (Interactive) ไม่รู้สึกว่าเซิร์ฟเวอร์ค้างไป
