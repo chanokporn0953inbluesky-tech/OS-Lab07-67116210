@@ -1,0 +1,36 @@
+======================================================
+COE67-222 Operating Systems - Lab 10 Report (Final)
+Name: Ms.Chanokporn Charoensilp
+Student ID: 67116210
+======================================================
+
+1. The Role of the Operating System:
+In this mini-project, our Python script simulated the major responsibilities of an Operating System. 
+Match the specific code behavior in `ultimate_cluster_os.py` to the corresponding OS concept you learned throughout the semester:
+
+- File System & Permissions (Lab 9): 
+  [Explain which line of code simulated this and why Workload D failed]
+ตอบ: โค้ดส่วน `if not os.path.exists(dataset_path):` ในฟังก์ชัน `_execute_job` ทำหน้าที่จำลองการตรวจสอบการมีอยู่และการเข้าถึงไฟล์ของระบบปฏิบัติการ โดย Workload D ล้มเหลวทันที (Failed) เนื่องจากพยายามเข้าถึงไฟล์ 'secret_keys.txt' ซึ่งไม่มีอยู่จริงในระบบหรือถูกจำกัดสิทธิ์ ทำให้ถูก OS สกัดกั้นไว้ตั้งแต่ระดับ File System
+
+- Memory Management (Labs 5/6):
+  [Explain how the OS prevented Thrashing by using the `while` loop for RAM allocation]
+ตอบ: โค้ดใช้ลูป `while True:` ร่วมกับ `with self.ram_lock:` เพื่อตรวจสอบว่า Physical RAM มีเหลือเพียงพอตามที่งานร้องขอ (`req_ram`) หรือไม่ หากยังไม่พอ ระบบจะสั่งหยุดรอ (`time.sleep(0.5)`) จนกว่างานอื่นจะคืนหน่วยความจำกลับมา จึงจะจัดสรรให้และเริ่มทำงาน เพื่อป้องกันปัญหา Memory Overcommitment และหลีกเลี่ยงการเกิด OS Swapping ซ้ำซ้อนที่นำไปสู่สภาวะ Thrashing
+
+- Concurrency & Deadlocks (Labs 3/4):
+  [Explain how the OS sorted the requested GPUs to avoid Circular Wait deadlocks]
+ตอบ: โค้ดใช้คำสั่ง `sorted_gpus = sorted(req_gpus)` เพื่อบังคับลำดับการร้องขอและจองทรัพยากร GPU ให้เป็นไปตามลำดับหมายเลขจากน้อยไปมากเสมอ (Resource Hierarchy) ซึ่งเป็นการทำลายเงื่อนไข Circular Wait ของ Coffman conditions จึงช่วยป้องกันการเกิดสภาวะ Deadlock ในกรณีที่มีหลายโปรเซสร้องขอ GPU หลายตัวพร้อมกัน
+
+2. Hardware Utilization:
+Look at the output of your Live Dashboard. Explain how the OS successfully ran Workload A (LLaMA Training), Workload B (Preprocessing), and Workload C (Inference) AT THE SAME TIME without crashing. Why didn't they block each other?
+ตอบ:
+- ระบบสามารถรันทั้ง 3 Workloads พร้อมกันได้โดยไม่บล็อกกันและไม่แคช เนื่องจากทรัพยากรประเภทต่างๆ ถูกจัดสรรอย่างเป็นอิสระและมีความต้องการไม่ทับซ้อนกัน:
+  1. ทรัพยากร RAM รวมมี 64GB โดย Workload A ใช้ 40GB, Workload B ใช้ 16GB และ Workload C ใช้ 2GB รวมเป็น 58GB ซึ่งไม่เกินขีดจำกัดของระบบ (คงเหลือ 6GB)
+  2. Workload B เป็นงาน Preprocessing ที่ทำงานบน CPU เท่านั้น (req_gpus=[]) จึงสามารถรันได้ทันทีโดยไม่ต้องรอหรือแย่งชิง GPU จากงานอื่น
+  3. Workload A ยึดครอง GPU 0, 1, 2 แต่ระบบมี GPU ทั้งหมด 4 ตัว ทำให้ Workload C ซึ่งเป็นงาน Inference ใช้เพียง 1 ตัว สามารถเข้าไปจับจอง GPU 3 ที่ยังว่างอยู่ได้ทันที
+  การจัดสรรทรัพยากรแบบไม่ชนกันนี้ทำให้ฮาร์ดแวร์ทั้ง RAM, CPU และ GPU ถูกใช้งานพร้อมกันอย่างเต็มประสิทธิภาพสูงสุด (Maximum Hardware Utilization)
+
+3. Course Reflection (AI Engineering Context):
+You are now applying for a role as a Machine Learning Operations (MLOps) Engineer. 
+Write a short paragraph explaining how understanding Operating Systems (Process queues, RAM/Virtual Memory limits, Deadlock avoidance, File systems) gives you an advantage over a programmer who only knows how to write basic Python/PyTorch scripts.
+ตอบ:
+การเข้าใจระบบปฏิบัติการช่วยให้วิศวกร MLOps มองเห็นภาพรวมการทำงานในระดับล่างของ Infrastructure มากกว่าแค่การเขียนโค้ดโมเดล โดยสามารถออกแบบและปรับแต่ง Pipeline การประมวลผลขนาดใหญ่ได้อย่างมีเสถียรภาพ เช่น การจัดลำดับคิวงาน (Process Queues) ใน Slurm/Kubernetes เพื่อจัดสรรเวลาได้อย่างมีประสิทธิภาพ, การจัดการข้อจำกัดของหน่วยความจำเพื่อหลีกเลี่ยง Out-Of-Memory (OOM) และการเกิด Thrashing, การออกแบบการเข้าถึงทรัพยากรเพื่อป้องกันไม่ให้เกิด Deadlock คลัสเตอร์ค้าง รวมถึงการเลือกโครงสร้างไฟล์และการอ่าน/เขียนแบบ Sequential I/O เพื่อป้องกันปัญหา I/O Bound ทำให้ GPU ทำงานได้เต็มกำลัง ความรู้นี้ทำให้สามารถวิเคราะห์ปัญหาคอขวด (Bottlenecks) และควบคุมต้นทุนค่าใช้จ่ายในการเทรนโมเดลบนคลัสเตอร์ขนาดใหญ่ได้อย่างคุ้มค่า ซึ่งเป็นทักษะที่โปรแกรมเมอร์ที่เขียนเพียงสคริปต์ระดับสูงไม่สามารถทำได้
